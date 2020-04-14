@@ -6,7 +6,7 @@
 function change_feature() {
 	FC=$(cat "${1}")
 	if [ "$FC" != "$2" ]; then
-		if [ "$DRYRUN" -eq 0 ]; then
+		if [ "${MODE}" == "dryrun" ]; then
 			echo "${2}" > "${1}"
 			subsubstatus "$1 changed from $FC to $2"
 		else

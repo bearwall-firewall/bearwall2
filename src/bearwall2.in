@@ -11,48 +11,9 @@ DATADIR=@DATADIR@
 VERSION="2.00"
 REVISION="HEAD"
 
-# Command line arguments
-FLUSH=0
-DRYRUN=0
-if [ $# -gt "0" ] ; then
-	case "$1" in
-		-v|--version)
-			echo "Bearwall2 version ${VERSION}"
-			exit
-			;;
-		-f|--flush)
-			FLUSH=1
-			;;
-		-d|--dry-run)
-			DRYRUN=1
-			;;
-		-h|--help)
-			echo "Usage: $(basename "${0}") -h |-v | -f | -d"
-			echo ""
-			echo "Options:"
-			echo "	* -h|--help	Display help"
-			echo "	* -v|--version	Show version"
-			echo "	* -d|--dry-run	Generate firewall rules, but don't install them"
-			echo "	* -f|--flush	Remove current firewall rules"
-			echo "	* If run with no arguments bearwall will start as normal and install firewall rules"
-			exit
-			;;
-		*)
-			echo "$(basename "${0}") does not understand ${1}"
-			exit
-			;;
-	esac
-fi
-
-# flush the datadir
-rm -rf $DATADIR/tmp
-mkdir -p $DATADIR/tmp
-
-OF=$DATADIR/tmp/output.nftables
-
 # Parse configuration file
 # Configuration variables can be accessed as conf_KEY
-if [ ! -f "$CONFDIR/bearwall2.conf" ]; then
+if [ ! -f "${CONFDIR}/bearwall2.conf" ]; then
 	echo "No configuration file found at ${CONFDIR}/bearwall2.conf, aborting."
 	exit -1
 fi
@@ -62,11 +23,114 @@ while read -r line; do
 		v=$(echo "${line}" | cut -d'=' -f 2-)
 		export $"conf_${k}"="${v}"
 	fi
-done < $CONFDIR/bearwall2.conf
+done < "${CONFDIR}/bearwall2.conf"
+
+# Command line arguments
+MODE=""
+
+while [ ! $# -eq 0 ]; do
+	case "$1" in
+		-t | --try | try)
+			if [ "${2}" ]; then
+				ROLLBACK_DELAY=${2}
+				shift
+			else
+				ROLLBACK_DELAY=${conf_rollback_delay}
+			fi
+			MODE="try"
+			;;
+		-r | --rollback | rollback)
+			if [ "${2}" ]; then
+				ROLLBACK_DELAY=${2}
+				shift
+			else
+				ROLLBACK_DELAY=0
+			fi
+			MODE="rollback"
+			;;
+		-c | --commit | commit)
+			MODE="commit"
+			;;
+		-f | --flush | flush)
+			MODE="flush"
+			;;
+		-d | --dry-run | dry-run)
+			MODE="dryrun"
+			;;
+		-v | --version | version)
+			echo "$(basename "${0}") version ${VERSION}"
+			exit
+			;;
+		-h | --help | help)
+			echo "Usage: $(basename "${0}") [help | version | flush | dry-run | try | commit | rollback]"
+			echo ""
+			echo "Options:"
+			echo "	* -t|--try [time]	Temporarily apply firewall rules, if not committed, automatically rollback"
+			echo "	* -c|--commit		Apply firewall rules from try command permanently"
+			echo "	* -r|--rollback		Rollback firewall rules applied by try command immediately"
+			echo "	* -h|--help		Display help"
+			echo "	* -v|--version		Show version"
+			echo "	* -d|--dry-run		Generate firewall rules, but don't install them"
+			echo "	* -f|--flush		Remove current firewall rules"
+			echo ""
+			echo "	* If run with no arguments bearwall will start as normal and install firewall rules"
+			exit
+			;;
+		*)
+			echo "$(basename "${0}") does not understand ${1}"
+			exit
+			;;
+	esac
+	shift
+done
 
 cd $BASEDIR
 . support/common.functions
 . support/firewall.functions
+
+BACKUP="${DATADIR}/tmp/backup.nftables"
+OF="${DATADIR}/tmp/output.nftables"
+
+if [ "${MODE}" == "rollback" ]; then
+	status "Rolling back firewall to previous state"
+	if [ ! -f "${BACKUP}" ]; then
+		substatus "Rollback failed, no previous backup state found"
+		exit -1
+	fi
+
+	sleep "${ROLLBACK_DELAY}"
+	substatus "Invoking nftables (nft)"
+	/usr/sbin/nft -f "${BACKUP}"
+
+	# Tidy other rollbacks which might be running in background
+	while read -r pid; do
+	  if [ ! -z "${pid}" ] && [ "${pid}" != "${BASHPID}" ]; then
+		kill "${pid}"
+	  fi
+	done <<<"$(pgrep -f 'bearwall2 rollback')"
+
+	exit 0
+fi
+
+# flush the datadir
+rm -rf "${DATADIR}/tmp"
+mkdir -p "${DATADIR}/tmp"
+
+if [ "${MODE}" == "commit" ]; then
+	status "Committing current firewall policy"
+	if pkill -f 'bearwall2 rollback' > /dev/null; then
+		substatus "Commit successful"
+		exit 0
+	else
+		substatus "Commit failed, no rollback queued"
+		exit -1
+	fi
+fi
+
+if pgrep -f 'bearwall2 rollback' > /dev/null; then
+	echo "Error: last change not committed, either commit or rollback"
+	exit -1
+fi
 
 # Check we actually have interface configuration before we start
 if [ -d $CONFDIR/interfaces.d/ ]; then
@@ -83,10 +147,10 @@ else
 fi
 
 # User is requesting we kill the firewall, not load it.
-if [ "$FLUSH" -eq 1 ]; then
+if [ "${MODE}" == "flush" ]; then
 	status "Flushing firewall"
 
-	substatus "invoking nftables (nft flush ruleset)"
+	substatus "Invoking nftables (nft flush ruleset)"
 	/usr/sbin/nft flush ruleset
 	exit 0
 fi
@@ -130,11 +194,31 @@ build_vmap ${HOOK_PREROUTING} prerouting prerouting "${PREROUTING_IFACE[@]}"
 build_vmap ${HOOK_POSTROUTING} postrouting postrouting "${POSTROUTING_IFACE[@]}"
 echo "}" >> "${OF}"
 
-if [ "$DRYRUN" -eq 0 ]; then
-	status "Doing atomic load"
-	substatus "invoking nftables (nft)"
+if [ "${MODE}" == "try" ]; then
+	status "Applying firewall policies with automatic rollback"
+	substatus "Backing up previous nftables state"
+	echo "flush ruleset" > "${BACKUP}"
+	/usr/sbin/nft list ruleset >> "${BACKUP}"
+	nohup bash -c "/usr/sbin/bearwall2 rollback ${ROLLBACK_DELAY}" </dev/null >/dev/null 2>&1 &
+	substatus "Invoking nftables (nft)"
+
+	echo "\
+
+The new firewall policy has been temporarily applied and will
+be automatically rolled back in ${ROLLBACK_DELAY} seconds unless committed.
+
+To commit the new firewall policy, run:
+	$ sudo bearwall2 commit
+
+To rollback without waiting, run:
+	$ sudo bearwall2 rollback"
+
 	/usr/sbin/nft -f "${OF}"
+elif [ "${MODE}" == "dryrun" ]; then
+	status "Dry-run mode, not loading firewall policies"
+	substatus "nftables rule file can be found at ${OF}"
 else
-	status "Dryrun mode, not loading firewall"
-	substatus "nftables file found at ${OF}"
+	status "Doing atomic load"
+	substatus "Invoking nftables (nft)"
+	/usr/sbin/nft -f "${OF}"
 fi

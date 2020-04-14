@@ -79,3 +79,18 @@ conntrack=stateful
 #
 # Default missing=withhold
 missing=withhold
+
+#
+# Rollback delay
+#
+# The number of seconds bearwall should wait before automatically rolling back
+# firewall policy after the try command has been run.
+#
+# Note: This value can be overridden by supplying a different delay time as an
+# argument to the try command.
+#
+# Values:
+#    - delay in seconds
+#
+# Default rollback_delay=30
+rollback_delay=30

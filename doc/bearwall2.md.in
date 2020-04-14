@@ -10,17 +10,27 @@
 
 # OPTIONS
 
--h, \--help
+-h, \--help, help
 :   Display help
 
--v, \--version
+-v, \--version, version
 :   Display current version
 
--f, \--flush
+-f, \--flush, flush
 :   Remove current firewall rules
 
--d, \--dry-run
+-d, \--dry-run, dry-run
 :   Generate firewall rules, but don't install them
+
+-t, \--try, try [time]
+:   Temporarily apply firewall rules, if not committed, automatically rollback
+    after *time* seconds (or the value of the config option *rollback_delay*)
+
+-c, \--commit, commit
+:   Apply firewall rules from try command permanently
+
+-r, \--rollback, rollback
+:   Rollback firewall rules applied by try command immediately
 
 # DESCRIPTION
 
@@ -175,10 +185,20 @@ Note: If you are remotely logged into the machine you are running these commands
 on, make sure you have edited the *external* class and have a policy that allows
 that traffic.
 
-To apply the new policies, simply run the @PKGNAME@ command:
+To apply the new policies, we can run @PKGNAME@ with the `try` command:
 
 ```
-$ @PKGNAME@
+$ sudo @PKGNAME@ try
+```
+
+This will temporarily apply the new policies, rolling back to the old firewall
+state after 30 seconds in case we accidentally block our access to the machine.
+
+If we are happy with the new policies we can cancel the rollback by running
+commit:
+
+```
+$ sudo @PKGNAME@ commit
 ```
 
 For more examples, see the sample files in the **@CONFDIR@/classes.d** directory.
