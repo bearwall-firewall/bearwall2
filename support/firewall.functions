@@ -245,28 +245,13 @@ function nft(){
 			OUT+=("${rule}")
 			;;
 		forward-in)
-			re="(.*)\<accept\>(.*)"
-			# Replace a non terminator accept with return
-			if [[ "$@" =~ $re ]]; then
-				rule="${BASH_REMATCH[1]} return ${BASH_REMATCH[2]}"
-				rule=$(trim "${rule}")
-			fi
 			FWD_IN+=("${rule}")
 			;;
 		forward-out)
 			FWD_OUT+=("${rule}")
 			;;
 		forward)
-			OLD_RULE="${rule}"
-			re="(.*)\<accept\>(.*)"
-			# Replace a non terminator accept with return
-			if [[ "$@" =~ $re ]]; then
-				rule="${BASH_REMATCH[1]} return ${BASH_REMATCH[2]}"
-				rule=$(trim "${rule}")
-			fi
 			FWD_IN+=("${rule}")
-
-			rule=${OLD_RULE}
 			remap_inout "${rule}"
 			FWD_OUT+=("${rule}")
 			;;
