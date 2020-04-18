@@ -44,18 +44,18 @@ function if_feature() {
 	fi
 
 	if [ -z "${if}" ]; then
-		if [ -z "${NO4}" -a -e "/proc/sys/net/ipv4/conf/all/${1}" ]; then
+		if [ -z "${NO4}" ] && [ -e "/proc/sys/net/ipv4/conf/all/${1}" ]; then
 			change_feature "/proc/sys/net/ipv4/conf/all/${1}" "${2}"
 		fi
-		if [ -z "${NO6}" -a -e "/proc/sys/net/ipv6/conf/all/${1}" ]; then
+		if [ -z "${NO6}" ] && [ -e "/proc/sys/net/ipv6/conf/all/${1}" ]; then
 			change_feature "/proc/sys/net/ipv6/conf/all/${1}" "${2}"
 		fi
 
 	else
-		if [ -z "${NO4}" -a -e "/proc/sys/net/ipv4/conf/${if}/${1}" ]; then
+		if [ -z "${NO4}" ] && [ -e "/proc/sys/net/ipv4/conf/${if}/${1}" ]; then
 			change_feature "/proc/sys/net/ipv4/conf/${if}/${1}" "${2}"
 		fi
-		if [ -z "${NO6}" -a -e "/proc/sys/net/ipv6/conf/${if}/${1}" ]; then
+		if [ -z "${NO6}" ] && [ -e "/proc/sys/net/ipv6/conf/${if}/${1}" ]; then
 			change_feature "/proc/sys/net/ipv6/conf/${if}/${1}" "${2}"
 		fi
 	fi
@@ -126,7 +126,7 @@ function register {
 	IMPORTED="${IMPORTED} ${RULESET}"
 	HAS_REGISTERED=1
 	unset LOCAL_CHAIN
-	declare -A LOCAL_CHAIN
+	declare -a LOCAL_CHAIN
 	OLD_CHAIN=$CHAIN
 	CHAIN=local
 }
@@ -399,7 +399,7 @@ function log(){
 
 function load_interface_rules() {
 	if=$1
-	declare -a IN=()
+	declare -a IN
 	declare -a OUT
 	declare -a FWD_IN
 	declare -a FWD_OUT

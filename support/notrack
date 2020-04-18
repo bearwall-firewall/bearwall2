@@ -9,7 +9,7 @@ case "$conf_conntrack" in
 		echo "	set notrack_v4 {" >> "${OF}"
 		echo "		type ipv4_addr" >> "${OF}"
 		echo "		elements = {" >> "${OF}"
-		while read rt; do
+		while read -r rt; do
 			rt=($rt)
 			if [[ "${rt[1]}" =~ / ]]; then continue; fi
 			echo "			${rt[1]}," >> "${OF}"
@@ -21,7 +21,7 @@ case "$conf_conntrack" in
 		echo "	set notrack_v6 {" >> "${OF}"
 		echo "		type ipv6_addr" >> "${OF}"
 		echo "		elements = {" >> "${OF}"
-		while read rt; do
+		while read -r rt; do
 			rt=($rt)
 			echo "			${rt[1]}," >> "${OF}"
 		done < <(ip -6 ro show table local type local)

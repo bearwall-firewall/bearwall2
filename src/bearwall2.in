@@ -56,11 +56,11 @@ if [ ! -f "$CONFDIR/bearwall2.conf" ]; then
 	echo "No configuration file found at ${CONFDIR}/bearwall2.conf, aborting."
 	exit -1
 fi
-while read line; do
+while read -r line; do
 	if [[ "$line" =~ ^[^#]*= ]]; then
 		k=$(echo "${line}" | cut -d'=' -f 1)
 		v=$(echo "${line}" | cut -d'=' -f 2-)
-		export $"conf_${k}"=$v
+		export $"conf_${k}"="${v}"
 	fi
 done < $CONFDIR/bearwall2.conf
 
@@ -98,8 +98,7 @@ HOOK_OUTPUT=0
 HOOK_FORWARD=0
 VMAP_IIF=0
 VMAP_IFNAME=0
-declare -a INPUT_IFACE=()
-
+declare -a INPUT_IFACE
 declare -a INTERFACES
 
 KERNEL_INTERFACES=$(ip -o link | sed 's/^[0-9]\+: \([a-zA-Z0-9_\.-]*\).*$/\1/')
