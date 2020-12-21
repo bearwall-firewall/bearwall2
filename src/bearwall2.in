@@ -107,13 +107,11 @@ if [ "${MODE}" == "rollback" ]; then
 	exit 0
 fi
 
-# flush the datadir
-rm -rf "${DATADIR}/tmp"
-mkdir -p "${DATADIR}/tmp"
-
 if [ "${MODE}" == "commit" ]; then
 	status "Committing current firewall policy"
 	if stop_rollbacks; then
+		# flush the datadir, remove backup etc
+		rm -rf "${DATADIR}/tmp"
 		substatus "Commit successful"
 		exit 0
 	else
@@ -166,6 +164,11 @@ KERNEL_INTERFACES=$(ip -o link | sed 's/^[0-9]\+: \([a-zA-Z0-9_\.-]*\).*$/\1/')
 KERNEL_INTERFACES="localhost $KERNEL_INTERFACES"
 
 # This is the meat of the script.
+
+# First off, start clean - flush the datadir
+rm -rf "${DATADIR}/tmp"
+mkdir -p "${DATADIR}/tmp"
+
 # For each interface (defined in the $CONFDIR/interfaces.d directory)
 #  Create some chains, "if-in", "if-out", "if-forward-in", "if-forward-out"
 #  "if-postrouting-out"
