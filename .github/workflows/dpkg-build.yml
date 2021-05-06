@@ -55,7 +55,10 @@ jobs:
           apt-get update
           apt-get -y upgrade
           apt-get -y install devscripts dpkg-dev debhelper equivs
-          mk-build-deps -i -r -t 'apt-get -f -y --force-yes'
+      - name: Backport build tools on xenial
+        run: |
+          apt-get install -t xenial-backports --no-install-recommends --no-install-suggests -y debhelper
+        if:  matrix.target == 'ubuntu:xenial'
       - name: Bump version
         run: |
           export git_version=${GITHUB_REF##*/}
@@ -65,6 +68,7 @@ jobs:
           sed -i -e "s#REVISION=\".*\"#REVISION=\"${git_revision}\"#g" src/bearwall2.in
       - name: Build package
         run: |
+          mk-build-deps -i -r -t 'apt-get -f -y --force-yes'
           make deb
           dirname=$(echo ${{ matrix.target }} | tr ':' '_')
           package_path="${GITHUB_WORKSPACE}/packages/${dirname}"
