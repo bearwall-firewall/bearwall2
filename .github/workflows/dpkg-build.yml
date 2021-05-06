@@ -1,33 +1,62 @@
 name: Debian Package Build
 
 on:
-  push:
-    tags:
-      - '*'
+  release:
+    types:
+      - published
+
+env:
+  DEBIAN_FRONTEND: noninteractive
+  DEBEMAIL: maintainers@bearwall.org
+  DEBFULLNAME: Bearwall Maintainers
 
 jobs:
+  build-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Build matrix
+        id: set-matrix
+        run: |
+          git_tmp_dir=$(mktemp -d /tmp/distro-info-data-XXXXX)
+          git clone --depth 1 https://salsa.debian.org/debian/distro-info-data "${git_tmp_dir}"
+          releases=()
+          for release in $(awk -F ',' -v today="$(date --utc "+%F")" \
+              'BEGIN {OFS=","} NR>1 { if (($6 == "" || $6 >= today) && ($5 != "" && $5 <= today)) print $3 }' \
+              "${git_tmp_dir}/ubuntu.csv"); do
+              releases+=("ubuntu:${release}")
+          done
+          for release in $(awk -F ',' -v today="$(date --utc "+%F")" \
+              'BEGIN {OFS=","} NR>1 { if (($6 == "" || $6 >= today) && ($4 != "" && $4 <= today)) print $3 }' \
+              "${git_tmp_dir}/debian.csv" | grep -v -E "(sid|experimental)"); do
+              releases+=("debian:${release}")
+          done
+          releases+=("debian:stretch")
+          matrix=$(printf "%s\n" "${releases[@]}" | jq -nRc '[inputs]')
+          echo "::set-output name=matrix::${matrix}"
+
   build:
     runs-on: ubuntu-latest
+    needs: build-matrix
     container:
       image: ${{ matrix.target }}
     strategy:
       matrix:
         arch:
           - amd64
-        target:
-            - "ubuntu:bionic"
+        target: ${{ fromJson(needs.build-matrix.outputs.matrix) }}
     steps:
-      - name: Install packages
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - name: Install dependencies
         run: |
           apt-get update
           apt-get -y upgrade
           apt-get -y install devscripts dpkg-dev debhelper equivs
-      - name: Checkout repo
-        uses: actions/checkout@v2
+          mk-build-deps -i -r -t 'apt-get -f -y --force-yes'
       - name: Bump version
         run: |
-          export DEBEMAIL='maintainers@bearwall.org'
-          export DEBFULLNAME='Bearwall Maintainers'
           export git_version=${GITHUB_REF##*/}
           export git_revision=${GITHUB_SHA}
           debchange --newversion ${git_version} -b "New upstream release"
@@ -36,15 +65,14 @@ jobs:
       - name: Build package
         run: |
           make deb
-      - name: Store package
-        run: |
-          mkdir -p packages/all
-          cp ../*.deb packages/all
-      - name: Publish package on bintray
-        uses: wanduow/action-bintray-upload-debian-packages@v1
+          dirname=$(echo ${{ matrix.target }} | tr ':' '_')
+          package_path="${GITHUB_WORKSPACE}/packages/${dirname}"
+          mkdir -p "${package_path}"
+          mv ../*.deb "${package_path}"
+      - name: Publish packages to cloudsmith
+        uses: wanduow/action-cloudsmith-upload-packages@v1
         with:
           path: packages/
           repo: bearwall/bearwall2
-          license: GPL-2.0
-          username: gizmoguy
-          api_key: ${{ secrets.BINTRAY_API_KEY }}
+          username: brad-cowie
+          api_key: ${{ secrets.CLOUDSMITH_API_KEY }}
