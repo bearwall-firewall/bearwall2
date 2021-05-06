@@ -33,6 +33,7 @@ jobs:
               releases+=("debian:${release}")
           done
           releases+=("debian:stretch")
+          releases+=("ubuntu:xenial")
           matrix=$(printf "%s\n" "${releases[@]}" | jq -nRc '[inputs]')
           echo "::set-output name=matrix::${matrix}"
 
