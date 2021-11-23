@@ -12,8 +12,10 @@
 # Apply common host policy (from localhost.if) to out direction
 #policy out host
 
-# Host apply default rules after host policy
+# Apply default rules after host policy
+# Reject any inbound traffic received on this machine
 policy in reject
+# Allow any outbound traffic generated on this machine
 policy out accept
 
 # Masquerade any traffic leaving onto the IP of this interface
@@ -30,11 +32,8 @@ policy postrouting masquerade
 # Portforward external port 1234 to 1.2.3.4:5678
 #policy prerouting tcp dport 1234 dnat 1.2.3.4:5678
 
-# Having issues with stupid people breaking path MTU?
+# Having issues with people breaking path MTU?
 # policy out ip daddr 1.2.3.4 tcp flags syn tcp option maxseg size set 576
-
-# Allow any traffic generated on this machine out to the Internet
-policy out accept
 
 # Keep the internet clean - block known MS worm traffic
 policy forward REJECT-MS
