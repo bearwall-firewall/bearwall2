@@ -2,6 +2,8 @@
 Description=Bearwall2
 After=network-online.target
 Wants=network-online.target
+PartOf=networking.service NetworkManager.service systemd-networkd.service
+After=networking.service NetworkManager.service systemd-networkd.service
 
 [Service]
 Type=oneshot
