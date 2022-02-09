@@ -667,7 +667,7 @@ function build_vmap () {
 			build_interface_vmap "${map_ifname}" "${CHAIN}" INTERFACES_IFNAME interfaces_configured
 		fi
 
-		if [ "${conf_logging}" != "none" ]; then
+		if [ "${conf_logging}" != "none" ] && [ "${default_policy}" == "drop" ]; then
 			echo -n "		" >> "${OF}"
 			log "End of $CHAIN" >> "${OF}"
 		fi
