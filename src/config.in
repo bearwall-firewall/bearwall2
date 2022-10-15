@@ -94,8 +94,8 @@ missing=lazy
 #    - comma-separated list of interface types
 #      (which are string matched against the start of an interface name)
 #
-# Default always_ifname="ppp"
-always_ifname="ppp"
+# Default always_ifname="ppp,tailscale0"
+always_ifname="ppp,tailscale0"
 
 #
 # Rollback delay
