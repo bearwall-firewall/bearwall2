@@ -38,7 +38,7 @@ jobs:
           mkdir -p "${package_path}"
           mv ../*.deb "${package_path}"
       - name: Publish packages to cloudsmith
-        uses: wanduow/action-cloudsmith-upload-packages@v1
+        uses: wandnz/action-cloudsmith-upload-packages@v1
         with:
           path: packages/
           repo: bearwall/bearwall2
