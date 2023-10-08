@@ -39,6 +39,9 @@ while [ ! $# -eq 0 ]; do
 			fi
 			MODE="try"
 			;;
+		-e | --early | early)
+			MODE="early"
+			;;
 		-r | --rollback | rollback)
 			if [ "${2}" ]; then
 				ROLLBACK_DELAY=${2}
@@ -66,6 +69,7 @@ while [ ! $# -eq 0 ]; do
 			echo ""
 			echo "Options:"
 			echo "	* -t|--try [time]	Temporarily apply firewall rules, if not committed, automatically rollback"
+			echo "	* -e|--early		Run in mode suitable for use early in the system boot process"
 			echo "	* -c|--commit		Apply firewall rules from try command permanently"
 			echo "	* -r|--rollback		Rollback firewall rules applied by try command immediately"
 			echo "	* -h|--help		Display help"

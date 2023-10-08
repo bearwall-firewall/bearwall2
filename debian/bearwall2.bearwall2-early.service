@@ -6,7 +6,7 @@ Wants=network-pre.target
 [Service]
 Type=oneshot
 RemainAfterExit=no
-ExecStart=/usr/sbin/bearwall2
+ExecStart=/usr/sbin/bearwall2 --early
 
 [Install]
 WantedBy=multi-user.target
