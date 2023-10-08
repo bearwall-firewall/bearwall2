@@ -202,7 +202,7 @@ function import {
 		. rulesets.d/${RULESET}.rule
 	else
 		echo "Unknown ruleset ${RULESET}, ${RULESET}.rule file not found in $(pwd)/rulesets.d/ or ${CONFDIR}/rulesets.d/"
-		exit -1
+		exit 1
 	fi
 
 	subsubstatus Loaded ${RULESET}
@@ -227,7 +227,7 @@ function check_interface_file {
 	local interface_name=$1
 	if [ ! -f "${CONFDIR}/interfaces.d/${interface_name}.if" ]; then
 		echo "Interface file ${CONFDIR}/interfaces.d/${interface_name}.if is missing"
-		exit -1
+		exit 1
 	fi
 }
 
@@ -287,7 +287,7 @@ function nft(){
 			return 0
 		else
 			echo "Error loading ruleset, nested loading of a ruleset (${terminal_statement,,}) from inside another ruleset (${RULESET}) is not supported"
-			exit -1
+			exit 1
 		fi
 	fi
 
@@ -344,7 +344,7 @@ function nft(){
 			;;
 		*)
 			echo "Error at ${BASH_SOURCE[1]}:${BASH_LINENO[1]} Unknown chain '${CHAIN}'"
-			exit -1
+			exit 1
 	esac
 }
 
@@ -433,7 +433,7 @@ function log(){
 			;;
 		*)
 			echo "Unknown option '${conf_logging}' for logging in bearwall.conf"
-			exit -1
+			exit 1
 	esac
 }
 
@@ -501,7 +501,7 @@ function load_interface_rules() {
 				;;
 			error)
 				subsubstatus "Interface '$if' is missing: stop on error requested"
-				exit -1
+				exit 1
 				;;
 			withhold)
 				subsubstatus "Interface '$if' is missing: withheld"
@@ -509,7 +509,7 @@ function load_interface_rules() {
 				;;
 			*)
 				echo "Unknown option '$conf_missing' for missing in bearwall2.conf"
-				exit -1
+				exit 1
 		esac
 	else
 		if [ "$conf_missing" == "ifname" ]; then
@@ -642,7 +642,7 @@ function build_vmap () {
 			;;
 		*)
 			echo "FATAL: HOOK unknown to build_vmap"
-			exit -1
+			exit 1
 	esac
 
 	case $HOOK in
