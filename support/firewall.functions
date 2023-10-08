@@ -280,6 +280,25 @@ function nft(){
 
 	split_rule_by_terminal_statement "${rule}"
 
+	# Add counter to rule if counters are enabled
+	if [ "${conf_counters}" == "true" ]; then
+		if [ -z "${terminal_statement}" ]; then
+			# If there is no terminal statement, the entire rule will be in start_of_rule
+			rule="${start_of_rule} counter"
+		else
+			# There is a terminal statement, however start_of_rule or end_of_rule may be empty
+			if [ -z "${start_of_rule}" ] && [ -z "${end_of_rule}" ]; then
+				rule="counter ${terminal_statement}"
+			elif [ ! -z "${start_of_rule}" ] && [ ! -z "${end_of_rule}" ]; then
+				rule="${start_of_rule} counter ${terminal_statement} ${end_of_rule}"
+			elif [ ! -z "${start_of_rule}" ]; then
+				rule="${start_of_rule} counter ${terminal_statement}"
+			elif [ ! -z "${end_of_rule}" ]; then
+				rule="counter ${terminal_statement} ${end_of_rule}"
+			fi
+		fi
+	fi
+
 	# check if terminal is a ruleset and import it
 	if is_ruleset "${terminal_statement}"; then
 		if [ -z "${RULESET}" ]; then

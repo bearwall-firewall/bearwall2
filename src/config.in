@@ -6,6 +6,14 @@
 #
 
 #
+# Counters
+#
+# Should packet and byte counters be automatically created for each rule?
+#
+# Default: counters=false
+counters=false
+
+#
 # Logging
 #
 # Where should firewall rule matches be logged to?
