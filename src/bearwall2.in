@@ -15,7 +15,7 @@ REVISION="HEAD"
 # Configuration variables can be accessed as conf_KEY
 if [ ! -f "${CONFDIR}/bearwall2.conf" ]; then
 	echo "No configuration file found at ${CONFDIR}/bearwall2.conf, aborting."
-	exit -1
+	exit 1
 fi
 while read -r line; do
 	if [[ "$line" =~ ^[^#]*= ]]; then
@@ -95,7 +95,7 @@ if [ "${MODE}" == "rollback" ]; then
 	status "Rolling back firewall to previous state"
 	if [ ! -f "${BACKUP}" ]; then
 		substatus "Rollback failed, no previous backup state found"
-		exit -1
+		exit 1
 	fi
 
 	sleep "${ROLLBACK_DELAY}"
@@ -116,13 +116,13 @@ if [ "${MODE}" == "commit" ]; then
 		exit 0
 	else
 		substatus "Commit failed, no rollback queued"
-		exit -1
+		exit 1
 	fi
 fi
 
 if pgrep -f 'bearwall2 rollback' > /dev/null; then
 	echo "Error: last change not committed, either commit or rollback"
-	exit -1
+	exit 1
 fi
 
 # Check we actually have interface configuration before we start
@@ -216,7 +216,7 @@ To rollback without waiting, run:
 	if ! /usr/sbin/nft -f "${OF}"; then
 		substatus "Error loading nftables rules, abandoning new changes"
 		stop_rollbacks
-		exit -1
+		exit 1
 	fi
 elif [ "${MODE}" == "dryrun" ]; then
 	status "Dry-run mode, not loading firewall policies"
