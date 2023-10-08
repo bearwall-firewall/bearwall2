@@ -278,6 +278,13 @@ function nft(){
 		return 0
 	fi
 
+	if [ "${MODE}" == "early" ]; then
+		# In early mode, not all interfaces may exist yet
+		# so rewrite nft rules to look up interfaces by name, rather than by index
+		rule=$(echo "${rule}" | sed -E "s/(^| )oif /oifname /")
+		rule=$(echo "${rule}" | sed -E "s/(^| )iif /iifname /")
+	fi
+
 	split_rule_by_terminal_statement "${rule}"
 
 	# Add counter to rule if counters are enabled
