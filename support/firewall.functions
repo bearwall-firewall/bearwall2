@@ -469,6 +469,10 @@ function load_interface_rules() {
 		"return"
 		"jump"
 		"goto"
+		"dnat"
+		"snat"
+		"redirect"
+		"masquerade"
 		)
 
 	substatus "${if}"
