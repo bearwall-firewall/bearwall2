@@ -36,12 +36,11 @@ function array_contains () {
 function stop_rollbacks() {
 	local retcode=1
 	while read -r pid; do
-	  if [ ! -z "${pid}" ] && [ "${pid}" != "${BASHPID}" ] && [ -e /proc/${pid} ]; then
-		retcode=0
-		kill "${pid}"
-	  fi
+		if [ ! -z "${pid}" ] && [ "${pid}" != "${BASHPID}" ] && [ -e "/proc/${pid}" ]; then
+			retcode=0
+			kill "${pid}"
+		fi
 	done <<<"$(pgrep -f 'bearwall2 rollback')"
-
 	return "${retcode}"
 }
 
