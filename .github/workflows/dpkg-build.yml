@@ -25,9 +25,9 @@ jobs:
           apt-get -y install devscripts dpkg-dev debhelper equivs
       - name: Bump version
         run: |
-          export git_version=${GITHUB_REF##*/}
-          export git_revision=${GITHUB_SHA}
-          debchange --newversion ${git_version} -b "New upstream release"
+          export git_version="${GITHUB_REF_NAME}"
+          export git_revision="${GITHUB_SHA}"
+          debchange --newversion "${git_version}" -b "New upstream release"
           sed -i -e "s#VERSION=\".*\"#VERSION=\"${git_version}\"#g" src/bearwall2.in
           sed -i -e "s#REVISION=\".*\"#REVISION=\"${git_revision}\"#g" src/bearwall2.in
       - name: Build package
