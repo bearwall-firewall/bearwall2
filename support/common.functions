@@ -54,3 +54,17 @@ function always_use_ifname() {
 	done
 	return 1
 }
+
+function wildcard_ifname() {
+	local if=${1}
+	if [[ "${if}" == *"*"* ]]; then
+		return 0
+	fi
+	return 1
+}
+
+function safe_chain_name() {
+	local if=${1}
+	# Remove wildcard character
+	echo "${if}" | tr -d '*'
+}
