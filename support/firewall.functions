@@ -690,6 +690,10 @@ function build_vmap () {
 		echo "	chain $CHAIN {" >> "${OF}"
 		echo "		type ${chain_type} hook ${HOOK} priority 0; policy ${default_policy};" >> "${OF}"
 
+		if [ "${conf_counters}" == "true" ]; then
+			echo "		counter" >> "${OF}"
+		fi
+
 		if [ "${VMAP_IIF}" -eq 1 ]; then
 			build_interface_vmap "${map_iif}" "${CHAIN}" INTERFACES interfaces_configured
 		fi
@@ -701,6 +705,11 @@ function build_vmap () {
 			echo -n "		" >> "${OF}"
 			log "End of $CHAIN" >> "${OF}"
 		fi
+
+		if [ "${conf_counters}" == "true" ]; then
+			echo "		counter" >> "${OF}"
+		fi
+
 		echo "	}" >> "${OF}"
 	fi
 }
@@ -709,6 +718,11 @@ function build_vmap_fwd () {
 	if [ "${HOOK_FORWARD}" -gt 0 ]; then
 		echo "	chain forward {" >> "${OF}"
 		echo "		type filter hook forward priority 0; policy drop;" >> "${OF}"
+
+		if [ "${conf_counters}" == "true" ]; then
+			echo "		counter" >> "${OF}"
+		fi
+
 		if [ "${VMAP_IIF}" -eq 1 ] && [ "${HOOK_FORWARD_IN}" -gt 0 ]; then
 			build_interface_vmap "iif" "fwd_in" INTERFACES FORWARD_IN_IFACE
 		fi
@@ -727,6 +741,11 @@ function build_vmap_fwd () {
 			echo -n "		" >> "${OF}"
 			log "End of forward" >> "${OF}"
 		fi
+
+		if [ "${conf_counters}" == "true" ]; then
+			echo "		counter" >> "${OF}"
+		fi
+
 		echo "	}" >> "${OF}"
 	fi
 }
