@@ -510,7 +510,7 @@ function load_interface_rules() {
 			break
 		fi
 	done
-	if always_use_ifname "${if}"; then
+	if always_use_ifname "${if}" || wildcard_ifname "${if}"; then
 		INTERFACES_IFNAME+=($if)
 		VMAP_IFNAME=1
 	elif [ "$IFACE_FOUND" -eq 0 ]; then
@@ -554,12 +554,14 @@ function load_interface_rules() {
 	check_interface_file "${if}"
 	. "${CONFDIR}/interfaces.d/${if}.if"
 
+	if_safe=$(safe_chain_name "${if}")
+
 	if [ ${#IN[@]} -gt 0 ]; then
 		if [ "$if" != "localhost" ]; then
 			HOOK_INPUT=1
 			INPUT_IFACE+=($if)
 		fi
-		echo "	chain ${if}_input {" >> "${OF}"
+		echo "	chain ${if_safe}_input {" >> "${OF}"
 		for i in "${IN[@]}"; do
 			echo "		$i" >> "${OF}"
 		done
@@ -570,7 +572,7 @@ function load_interface_rules() {
 			HOOK_OUTPUT=1
 			OUTPUT_IFACE+=($if)
 		fi
-		echo "	chain ${if}_output {" >> "${OF}"
+		echo "	chain ${if_safe}_output {" >> "${OF}"
 		for i in "${OUT[@]}"; do
 			echo "		$i" >> "${OF}"
 		done
@@ -586,7 +588,7 @@ function load_interface_rules() {
 		HOOK_FORWARD=1
 		HOOK_FORWARD_IN=1
 		FORWARD_IN_IFACE+=($if)
-		echo "	chain ${if}_fwd_in {" >> "${OF}"
+		echo "	chain ${if_safe}_fwd_in {" >> "${OF}"
 		for i in "${FWD_IN[@]}"; do
 			echo "		$i" >> "${OF}"
 		done
@@ -596,7 +598,7 @@ function load_interface_rules() {
 		HOOK_FORWARD=1
 		HOOK_FORWARD_OUT=1
 		FORWARD_OUT_IFACE+=($if)
-		echo "	chain ${if}_fwd_out {" >> "${OF}"
+		echo "	chain ${if_safe}_fwd_out {" >> "${OF}"
 		for i in "${FWD_OUT[@]}"; do
 			echo "		$i" >> "${OF}"
 		done
@@ -605,7 +607,7 @@ function load_interface_rules() {
 	if [ ${#PRE_ROUTE[@]} -gt 0 ]; then
 		HOOK_PREROUTING=1
 		PREROUTING_IFACE+=($if)
-		echo "	chain ${if}_prerouting {" >> "${OF}"
+		echo "	chain ${if_safe}_prerouting {" >> "${OF}"
 		for i in "${PRE_ROUTE[@]}"; do
 			echo "		$i" >> "${OF}"
 		done
@@ -614,7 +616,7 @@ function load_interface_rules() {
 	if [ ${#POST_ROUTE[@]} -gt 0 ]; then
 		HOOK_POSTROUTING=1
 		POSTROUTING_IFACE+=($if)
-		echo "	chain ${if}_postrouting {" >> "${OF}"
+		echo "	chain ${if_safe}_postrouting {" >> "${OF}"
 		for i in "${POST_ROUTE[@]}"; do
 			echo "		$i" >> "${OF}"
 		done
@@ -636,7 +638,8 @@ function build_interface_vmap() {
 	for i in "${_interfaces_configured[@]}"; do
 		for j in "${_interfaces_all[@]}"; do
 			if [ "${j}" == "${i}" ]; then
-				vmap_str+=("			${i}: jump ${i}_${vmap_chain},")
+				i_safe=$(safe_chain_name "${i}")
+				vmap_str+=("			${i}: jump ${i_safe}_${vmap_chain},")
 				valid_interface=1
 				break
 			fi
