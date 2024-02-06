@@ -45,8 +45,18 @@ function stop_rollbacks() {
 	return "${retcode}"
 }
 
+function interface_exists() {
+	local if=${1}
+	if [ -e "/sys/class/net/${if}" ]; then
+		return 0
+	elif [ "${if}" == "localhost" ]; then
+		return 0
+	fi
+	return 1
+}
+
 function always_use_ifname() {
-	if=${1}
+	local if=${1}
 	for inttype in ${conf_always_ifname//,/ }; do
 		if [[ "${if}" == "${inttype}"* ]]; then
 			return 0

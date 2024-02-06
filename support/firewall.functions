@@ -283,6 +283,63 @@ function nft(){
 		# so rewrite nft rules to look up interfaces by name, rather than by index
 		rule=$(echo "${rule}" | sed -E "s/(^| )oif /oifname /")
 		rule=$(echo "${rule}" | sed -E "s/(^| )iif /iifname /")
+	elif [[ "${rule}" == *"oif "* ]] || [[ "${rule}" == *"iif "* ]]; then
+		# Need to check if interfaces actually exist and apply missing interface policy
+		for direction in oif iif; do
+			interface_always_ifname=0
+			interface_missing=0
+			missing_interfaces=()
+			if [[ "${rule}" =~ ${direction}[[:space:]]+([^[:space:]{]+) ]]; then
+				# Handle single interface
+				interface="${BASH_REMATCH[1]}"
+				if always_use_ifname "${interface}"; then
+					interface_always_ifname=1
+				elif ! interface_exists "${interface}"; then
+					interface_missing=1
+					missing_interfaces+=("${interface}")
+				fi
+			elif [[ "${rule}" =~ ${direction}[[:space:]]+\{([^}]+)\} ]]; then
+				# Handle list of interfaces
+				interfaces="${BASH_REMATCH[1]}"
+				while read -r interface; do
+					if always_use_ifname "${interface}"; then
+						interface_always_ifname=1
+					elif ! interface_exists "${interface}"; then
+						interface_missing=1
+						missing_interfaces+=("${interface}")
+					fi
+				done <<< "$(echo "${interfaces}" | tr ',' '\n')"
+			fi
+
+			if [ "${interface_always_ifname}" -eq 1 ]; then
+				rule=$(echo "${rule}" | sed -E "s/(^| )${direction} /${direction}name /")
+			elif [ "${interface_missing}" -eq 1 ]; then
+				case "${conf_missing}" in
+					ifname)
+						rule=$(echo "${rule}" | sed -E "s/(^| )${direction} /${direction}name /")
+						;;
+					lazy)
+						subsubstatus "Interface(s) '${missing_interfaces[*]}' missing: using ifname due to lazy"
+						rule=$(echo "${rule}" | sed -E "s/(^| )${direction} /${direction}name /")
+						;;
+
+					ignore)
+						subsubstatus "Interface(s) '${missing_interfaces[*]}' missing: ignoring (nft tables is likely to error)"
+						;;
+					error)
+						subsubstatus "Interface(s) '${missing_interfaces[*]}' missing: stop on error requested"
+						exit 1
+						;;
+					withhold)
+						subsubstatus "Interface(s) '${missing_interfaces[*]}' missing: withheld"
+						return 0
+						;;
+					*)
+						echo "Unknown option '${conf_missing}' for missing in bearwall2.conf"
+						exit 1
+				esac
+			fi
+		done
 	fi
 
 	split_rule_by_terminal_statement "${rule}"
@@ -503,17 +560,10 @@ function load_interface_rules() {
 
 	substatus "${if}"
 
-	IFACE_FOUND=0
-	for i in $KERNEL_INTERFACES; do
-		if [ "$if" == "$i" ]; then
-			IFACE_FOUND=1
-			break
-		fi
-	done
 	if always_use_ifname "${if}" || wildcard_ifname "${if}"; then
 		INTERFACES_IFNAME+=($if)
 		VMAP_IFNAME=1
-	elif [ "$IFACE_FOUND" -eq 0 ]; then
+	elif ! interface_exists "${if}"; then
 		case "${conf_missing}" in
 			ifname)
 				INTERFACES_IFNAME+=($if)
