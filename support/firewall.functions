@@ -389,10 +389,15 @@ function nft(){
 		forward-in)
 			# Replace accept with return so packets get passed on to forward-out
 			if [ "${terminal_statement}" == "accept" ]; then
-				if [ ! -z "${end_of_rule}" ]; then
-					FWD_IN+=("${start_of_rule} return ${end_of_rule}")
+				local return_action="return"
+				if [ "${conf_counters}" == "true" ]; then
+					return_action="counter return"
+				fi
+
+				if [ -n "${end_of_rule}" ]; then
+					FWD_IN+=("${start_of_rule}${return_action}${end_of_rule}")
 				else
-					FWD_IN+=("${start_of_rule} return")
+					FWD_IN+=("${start_of_rule}${return_action}")
 				fi
 			else
 				FWD_IN+=("${rule}")
@@ -404,10 +409,15 @@ function nft(){
 		forward)
 			# Replace accept with return so packets get passed on to forward-out
 			if [ "${terminal_statement}" == "accept" ]; then
-				if [ ! -z "${end_of_rule}" ]; then
-					FWD_IN+=("${start_of_rule} return ${end_of_rule}")
+				local return_action="return"
+				if [ "${conf_counters}" == "true" ]; then
+					return_action="counter return"
+				fi
+
+				if [ -n "${end_of_rule}" ]; then
+					FWD_IN+=("${start_of_rule}${return_action}${end_of_rule}")
 				else
-					FWD_IN+=("${start_of_rule} return")
+					FWD_IN+=("${start_of_rule}${return_action}")
 				fi
 			else
 				FWD_IN+=("${rule}")
