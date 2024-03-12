@@ -395,9 +395,9 @@ function nft(){
 				fi
 
 				if [ -n "${end_of_rule}" ]; then
-					FWD_IN+=("${start_of_rule}${return_action}${end_of_rule}")
+					FWD_IN+=("${start_of_rule} ${return_action} ${end_of_rule}")
 				else
-					FWD_IN+=("${start_of_rule}${return_action}")
+					FWD_IN+=("${start_of_rule} ${return_action}")
 				fi
 			else
 				FWD_IN+=("${rule}")
@@ -415,9 +415,9 @@ function nft(){
 				fi
 
 				if [ -n "${end_of_rule}" ]; then
-					FWD_IN+=("${start_of_rule}${return_action}${end_of_rule}")
+					FWD_IN+=("${start_of_rule} ${return_action} ${end_of_rule}")
 				else
-					FWD_IN+=("${start_of_rule}${return_action}")
+					FWD_IN+=("${start_of_rule} ${return_action}")
 				fi
 			else
 				FWD_IN+=("${rule}")
