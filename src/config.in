@@ -5,6 +5,17 @@
 # are configured in @CONFDIR@/interfaces.d and @CONFDIR@/classes.d
 #
 
+# nftables exclusivity
+#
+# Does bearwall have exclusive use of nftables
+# or is it sharing with other applications?
+#
+# If true, bearwall will delete nftables tables and rules
+# created by other applications, if false it won't.
+#
+# Default: nftables_exclusive=true
+nftables_exclusive=true
+
 #
 # Counters
 #

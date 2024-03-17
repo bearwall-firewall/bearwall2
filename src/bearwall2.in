@@ -147,8 +147,18 @@ fi
 if [ "${MODE}" == "flush" ]; then
 	status "Flushing firewall"
 
-	substatus "Invoking nftables (nft flush ruleset)"
-	/usr/sbin/nft flush ruleset
+	flush_cmd=""
+	if [ "${conf_nftables_exclusive}" == "true" ]; then
+		flush_cmd="/usr/sbin/nft flush ruleset"
+	elif /usr/sbin/nft list tables | grep "table inet bearwall$"; then
+		flush_cmd="/usr/sbin/nft delete table inet bearwall"
+	fi
+
+	if [ -n "${flush_cmd}" ]; then
+		substatus "Invoking nftables (${flush_cmd})"
+		${flush_cmd}
+	fi
+
 	exit 0
 fi
 
@@ -175,7 +185,14 @@ mkdir -p "${DATADIR}/tmp"
 #  "if-postrouting-out"
 #  Then source the file in that directory.
 # most of your rules will be defined in these files
-echo "flush ruleset" > "${OF}"
+if [ "${conf_nftables_exclusive}" == "true" ]; then
+	echo "flush ruleset" > "${OF}"
+else
+	# Create an empty table so that the delete command doesn't
+	# error out if this is the first time bearwall is running
+	echo "table inet bearwall" > "${OF}"
+	echo "delete table inet bearwall" >> "${OF}"
+fi
 echo "table inet bearwall {" >> "${OF}"
 
 # Deal with any conf_conntrack options
@@ -198,7 +215,14 @@ echo "}" >> "${OF}"
 if [ "${MODE}" == "try" ]; then
 	status "Applying firewall policies with automatic rollback"
 	substatus "Backing up previous nftables state"
-	echo "flush ruleset" > "${BACKUP}"
+	if [ "${conf_nftables_exclusive}" == "true" ]; then
+		echo "flush ruleset" > "${BACKUP}"
+	else
+		# Create an empty table so that the delete command doesn't
+		# error out if this is the first time bearwall is running
+		echo "table inet bearwall" > "${BACKUP}"
+		echo "delete table inet bearwall" >> "${BACKUP}"
+	fi
 	/usr/sbin/nft list ruleset >> "${BACKUP}"
 	nohup bash -c "/usr/sbin/bearwall2 rollback ${ROLLBACK_DELAY}" </dev/null >/dev/null 2>&1 &
 	substatus "Invoking nftables (nft)"
